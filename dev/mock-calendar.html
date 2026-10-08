@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock Calendar</title>
+<style>
+  body { margin: 0; font: 13px "Segoe UI", system-ui, sans-serif; background: #fff; color: #3c4043; }
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #dadce0; }
+  header h1 { margin: 0; font-size: 20px; font-weight: 400; }
+  header button { padding: 8px 14px; border-radius: 18px; border: 1px solid #dadce0; background: #1a73e8; color: #fff; cursor: pointer; }
+  .grid { position: relative; display: grid; grid-template-columns: 56px repeat(7, 1fr); }
+  .days { display: grid; grid-template-columns: 56px repeat(7, 1fr); border-bottom: 1px solid #dadce0; }
+  .days div { padding: 8px; text-align: center; }
+  .hour { height: 48px; border-bottom: 1px solid #eee; font-size: 10px; color: #70757a; text-align: right; padding-right: 6px; }
+  .col { position: relative; border-left: 1px solid #eee; }
+  .col .slot { height: 48px; border-bottom: 1px solid #eee; }
+  [data-eventid] { position: absolute; left: 2px; right: 6px; border-radius: 4px; padding: 2px 6px; color: #fff; overflow: hidden; cursor: pointer; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mock Calendar · Oct 5 – 11, 2026</h1>
+  <button id="go">Launch Cal Invaders (or press I)</button>
+  <label><input type="checkbox" id="empty"> Empty week</label>
+</header>
+<div class="days" id="days"></div>
+<div class="grid" id="grid"></div>
+<script>
+// Mimics Google Calendar's week view markup: chips with data-eventid and a visually-hidden
+// screen-reader line ("10am to 11am, Title, ...") that the scraper parses.
+const START = 8, END = 18, HOUR = 48;
+const DAYS = ['Mon 5', 'Tue 6', 'Wed 7', 'Thu 8', 'Fri 9', 'Sat 10', 'Sun 11'];
+const EVENTS = [
+  [0, 9, 0.5, 'Daily Standup', '#039be5'], [1, 9, 0.5, 'Daily Standup', '#039be5'], [2, 9, 0.5, 'Daily Standup', '#039be5'],
+  [3, 9, 0.5, 'Daily Standup', '#039be5'], [4, 9, 0.5, 'Daily Standup', '#039be5'],
+  [0, 10, 2, 'Q4 Planning Offsite (Remote)', '#8e24aa'], [0, 14, 1, '1:1 with Manager', '#33b679'],
+  [1, 11, 1.5, 'Design Review', '#f4511e'], [1, 13, 1, 'Lunch & Learn', '#f6bf26'], [1, 15, 1, 'Team Retro', '#e67c73'],
+  [2, 10, 1, 'Vendor Call', '#7986cb'], [2, 13.5, 3, 'All Company Town Hall', '#d50000'],
+  [3, 11, 1, 'Interview: Senior Engineer', '#0b8043'], [3, 14, 0.75, 'Sprint Planning', '#3f51b5'], [3, 16, 1, 'Budget Sync', '#039be5'],
+  [4, 10, 1, 'Customer Escalation', '#d50000'], [4, 15, 1.5, 'Friday Demo Day', '#8e24aa'], [4, 12, 0.5, 'Quick question', '#33b679'],
+];
+const fmt = (h) => { const hh = Math.floor(h), mm = Math.round((h - hh) * 60); const ap = hh >= 12 ? 'pm' : 'am'; const d = hh % 12 || 12; return d + (mm ? ':' + String(mm).padStart(2, '0') : '') + ap; };
+
+function build(empty) {
+  const days = document.getElementById('days'), grid = document.getElementById('grid');
+  days.innerHTML = '<div></div>' + DAYS.map((d) => '<div>' + d + '</div>').join('');
+  let html = '<div>';
+  for (let h = START; h < END; h++) html += '<div class="hour">' + fmt(h) + '</div>';
+  html += '</div>';
+  for (let d = 0; d < 7; d++) {
+    html += '<div class="col" data-day="' + d + '">';
+    for (let h = START; h < END; h++) html += '<div class="slot"></div>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+  if (empty) return;
+  EVENTS.forEach(([d, start, dur, title, color], i) => {
+    const el = document.createElement('div');
+    el.setAttribute('data-eventid', 'evt' + i);
+    el.setAttribute('role', 'button');
+    el.style.top = (start - START) * HOUR + 'px';
+    el.style.height = dur * HOUR - 2 + 'px';
+    el.style.background = color;
+    el.innerHTML = '<div class="sr">' + fmt(start) + ' to ' + fmt(start + dur) + ', ' + title +
+      ', Parker Nolan, Accepted, No location, October ' + (5 + d) + ', 2026</div>' +
+      '<div class="t">' + title + '</div><div>' + fmt(start) + ' – ' + fmt(start + dur) + '</div>';
+    grid.querySelector('[data-day="' + d + '"]').appendChild(el);
+  });
+}
+build(false);
+document.getElementById('empty').onchange = (e) => build(e.target.checked);
+
+// Loads the game files in the same order the extension's service worker injects them.
+const FILES = ['ns', 'audio', 'scrape', 'formation', 'crawl', 'engine', 'end', 'main'];
+function launch() {
+  if (window.__CI) return;
+  if (!document.getElementById('ci-css')) {
+    const l = document.createElement('link');
+    l.id = 'ci-css'; l.rel = 'stylesheet'; l.href = '../game/game.css';
+    document.head.appendChild(l);
+  }
+  (function next(i) {
+    if (i >= FILES.length) return;
+    const s = document.createElement('script');
+    s.src = '../game/' + FILES[i] + '.js?' + Date.now();
+    s.onload = () => { s.remove(); next(i + 1); };
+    document.body.appendChild(s);
+  })(0);
+}
+document.getElementById('go').onclick = launch;
+addEventListener('keydown', (e) => { if (e.key === 'i' && !window.__CI) launch(); });
+</script>
+</body>
+</html>

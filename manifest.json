@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Cal Invaders",
+  "version": "1.0.0",
+  "description": "A conference room far, far away... Turn Google Calendar into a meeting-blasting arcade game.",
+  "permissions": ["activeTab", "scripting"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Cal Invaders (Alt+Shift+I)",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+I" },
+      "description": "Launch Cal Invaders"
+    }
+  }
+}
